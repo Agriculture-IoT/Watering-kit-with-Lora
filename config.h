@@ -6,7 +6,9 @@
  */
 #define loraregion "US915"
 #define lorachannel "8-15"
+#define devaddr "32307C03"
 #define deveui "2CF7F12032307C03"
 #define appeui "8000000000000006"
 #define appkey "01EAC9876043F188C5D6E098D6D9C222"
-#define datarate 120     // Time in seconds
+#define datarate 90     // Time in seconds
+#define soil_moisture_threshold 1 //Moisture Threshold for watering plants

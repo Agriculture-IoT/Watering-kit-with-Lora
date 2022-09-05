@@ -95,7 +95,7 @@ int moisture2_value = 0;
 int moisture3_value = 0;
 int moisture4_value = 0;
 
-int moisture_threshold = 1 ;
+int mthreshold = soil_moisture_threshold ;
 
 // set water relays
 int relay1 = 6;
@@ -161,7 +161,7 @@ void setup()
         is_exist = true;
         at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEui\r\n");
         at_send_check_response("+ID: AppEui", 1000, "AT+ID=AppEui\r\n");
-        
+
         sprintf(deveui_cmd, "AT+ID=DevEUI, \"%s\"\r\n", deveui);
         at_send_check_response("+ID: DevEui", 1000, deveui_cmd);
         
@@ -196,28 +196,13 @@ void setup()
 
 void loop()
 {
-  // read the value from the moisture sensors:
-  read_value();
-  water_flower();
-  int button_state = digitalRead(button);
-  if (button_state == 1)
-  {
-    read_value();
-  }
 
-  Serial.println();
-  Serial.print("moisture1_value = ");
-  Serial.print(moisture1_value);
-  Serial.println();
-  Serial.print("moisture2_value = ");
-  Serial.print(moisture2_value);
-  Serial.println();
-  Serial.print("moisture3_value = ");
-  Serial.print(moisture3_value);
-  Serial.println();
-  Serial.print("moisture4_value = ");
-  Serial.print(moisture4_value);
-  Serial.println();
+  water_flower();
+//  int button_state = digitalRead(button);
+//  if (button_state == 1)
+//  {
+//    read_value();
+//  }
 
   // Lora start send data
   if (is_exist)
@@ -241,6 +226,23 @@ void loop()
       }
       else
       {
+           // read the value from the moisture sensors:
+          read_value();
+          
+          Serial.println();
+          Serial.print("moisture1_value = ");
+          Serial.print(moisture1_value);
+          Serial.println();
+          Serial.print("moisture2_value = ");
+          Serial.print(moisture2_value);
+          Serial.println();
+          Serial.print("moisture3_value = ");
+          Serial.print(moisture3_value);
+          Serial.println();
+          Serial.print("moisture4_value = ");
+          Serial.print(moisture4_value);
+          Serial.println();
+          
           char cmd[128];
           sprintf(cmd, "AT+CMSGHEX=\"%04X%04X%04X%04X\"\r\n", moisture1_value, moisture2_value, moisture3_value, moisture4_value);
           ret = at_send_check_response("Done", 10000, cmd);
@@ -253,11 +255,10 @@ void loop()
           {
               recv_prase(recv_buf);
           }
-          // Delay to datarate set
-          delay(datarate * 1000);
       }
   }
-  
+  // Delay to datarate set
+  delay(90000);
   // Lora end send data
 }
 
@@ -293,7 +294,7 @@ void water_flower()
 //  Serial.print("moisture1_value = ");
 //  Serial.print(moisture1_value);
 //  Serial.println();
-  if (moisture1_value < moisture_threshold)
+  if (moisture1_value < mthreshold)
   {
     digitalWrite(relay1, HIGH);
     relay1_state_flag = 1;
@@ -322,7 +323,7 @@ void water_flower()
 //  Serial.print("moisture2_value = ");
 //  Serial.print(moisture2_value);
 //  Serial.println();
-  if (moisture2_value < moisture_threshold)
+  if (moisture2_value < mthreshold)
   {
     digitalWrite(relay2, HIGH);
     relay2_state_flag = 1;
@@ -351,7 +352,7 @@ void water_flower()
 //    Serial.print("moisture3_value = ");
 //    Serial.print(moisture3_value);
 //    Serial.println();
-  if (moisture3_value < moisture_threshold)
+  if (moisture3_value < mthreshold)
   {
     digitalWrite(relay3, HIGH);
     relay3_state_flag = 1;
@@ -380,7 +381,7 @@ void water_flower()
 //    Serial.print("moisture4_value = ");
 //    Serial.print(moisture4_value);
 //    Serial.println();
-  if (moisture4_value < moisture_threshold)
+  if (moisture4_value < mthreshold)
   {
     digitalWrite(relay4, HIGH);
     relay4_state_flag = 1;
