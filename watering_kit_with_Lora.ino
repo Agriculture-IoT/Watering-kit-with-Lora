@@ -2,10 +2,7 @@
 #include "Wire.h"
 #include "RTClib.h"
 RTC_DS1307 RTC;
-//#include<SoftwareSerial.h>
 #include <ArduinoJson.h>
-
-//SoftwareSerial e5(7, 6);
 
 
 // Lora Functions start
@@ -15,8 +12,6 @@ RTC_DS1307 RTC;
 #define SEND_TIMEOUT_BASE 7000
 #define MAX_RESP_BUF_SZ  64
 #define MAX_DOWNLINK_BUF 32
-#define LOGLN(x)  Serial.println x
-#define SERIALE5 Serial1
 
 
 static char recv_buf[512];
@@ -132,20 +127,6 @@ int relay4_state_flag = 0;
 static unsigned long currentMillis_send = 0;
 static unsigned long  Lasttime_send = 0;
 
-char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tues", "Wed", "Thur", "Fri", "Sat",};
-unsigned long nowtime;
-unsigned long endtime;
-unsigned long nowtimeNext;
-unsigned long nowtime1;
-unsigned long endtime1;
-unsigned long nowtimeNext1;
-unsigned long nowtime2;
-unsigned long endtime2;
-unsigned long nowtimeNext2;
-unsigned long nowtime3;
-unsigned long endtime3;
-unsigned long nowtimeNext3;
-
 
 void setup()
 {
@@ -174,24 +155,14 @@ void setup()
     if (at_send_check_response("+AT: OK", 100, "AT\r\n"))
     {
         is_exist = true;
-        at_send_check_response("+ID: AppEui", 1000, "AT+ID\r\n");
-        at_send_check_response("+MODE: LWOTAA", 1000, "AT+MODE=LWOTAA\r\n");
+        at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEui\r\n");
+        at_send_check_response("+ID: AppEui", 1000, "AT+ID=AppEui\r\n");
+        at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEUI, \"2CF7F12032307C03\"\r\n");
+        at_send_check_response("+ID: AppEui", 1000, "AT+ID=AppEui, \"8000000000000006\"\r\n");
+        at_send_check_response("+KEY: APPKEY", 1000, "AT+KEY=APPKEY, \"01EAC9876043F188C5D6E098D6D9C222\"\r\n");
         at_send_check_response("+DR: US915", 1000, "AT+DR=US915\r\n");
-
-        char atch[18];
-        for ( int i=0 ; i < 72 ; i++ ) {
-          if ( i < 8 || i > 15 ) {
-            sprintf(atch, "AT+CH=%d,OFF\r\n", i);
-            at_send_check_response("+CH: NUM", 1000, atch);
-          }
-        }
-
-        at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEUI,\"2CF7F12032307C03\"\r\n");
-        at_send_check_response("+KEY: APPKEY", 1000, "AT+KEY=APPKEY,\"01EAC9876043F188C5D6E098D6D9C222\"\r\n");
+        at_send_check_response("+CH: NUM", 1000, "AT+CH=NUM,8-15\r\n");
         at_send_check_response("+MODE: LWOTAA", 1000, "AT+MODE=LWOTAA\r\n");
-        at_send_check_response("+DR: US915", 1000, "AT+DR=DR0\r\n");
-        at_send_check_response("+CLASS: A", 1000, "AT+CLASS=A\r\n");
-        at_send_check_response("+PORT: 1", 1000, "AT+PORT=1\r\n");
         delay(200);
         is_join = true;
     }
