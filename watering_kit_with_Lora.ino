@@ -2,17 +2,17 @@
 #include "Wire.h"
 #include "RTClib.h"
 RTC_DS1307 RTC;
-#include <ArduinoJson.h>
+#include<Arduino.h>
+#include "config.h"
 
-
-// Lora Functions start
-#define DEFAULT_TIMEOUT 2000
-#define PASSTHROUGH_TIMEOUT 15000
-#define JOIN_TIMEOUT 12000
-#define SEND_TIMEOUT_BASE 7000
-#define MAX_RESP_BUF_SZ  64
-#define MAX_DOWNLINK_BUF 32
-
+/* 
+ * LoRaWAN functions
+ * Adopted using example code from https://wiki.seeedstudio.com/Grove_LoRa_E5_New_Version/
+ * Wio-E5 is connected to Serial1 port of the Elecrow board.
+ * Port connections shown in the wiring-diagram.png 
+ * 
+ * I2C display not used in this project.
+ */
 
 static char recv_buf[512];
 static bool is_exist = false;
@@ -151,17 +151,37 @@ void setup()
     Serial1.begin(9600);
     delay(10000);
     Serial.print("E5 LORAWAN TEST\r\n");
- 
+    char deveui_cmd[40];
+    char appeui_cmd[40];
+    char appkey_cmd[40];
+    char loraregion_cmd[40];
+    char lorachannel_cmd[40];
     if (at_send_check_response("+AT: OK", 100, "AT\r\n"))
     {
         is_exist = true;
         at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEui\r\n");
         at_send_check_response("+ID: AppEui", 1000, "AT+ID=AppEui\r\n");
-        at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEUI, \"2CF7F12032307C03\"\r\n");
-        at_send_check_response("+ID: AppEui", 1000, "AT+ID=AppEui, \"8000000000000006\"\r\n");
-        at_send_check_response("+KEY: APPKEY", 1000, "AT+KEY=APPKEY, \"01EAC9876043F188C5D6E098D6D9C222\"\r\n");
-        at_send_check_response("+DR: US915", 1000, "AT+DR=US915\r\n");
-        at_send_check_response("+CH: NUM", 1000, "AT+CH=NUM,8-15\r\n");
+        
+        sprintf(deveui_cmd, "AT+ID=DevEUI, \"%s\"\r\n", deveui);
+        at_send_check_response("+ID: DevEui", 1000, deveui_cmd);
+        
+        sprintf(appeui_cmd, "AT+ID=AppEui, \"%s\"\r\n", appeui);
+        at_send_check_response("+ID: AppEui", 1000, appeui_cmd);
+        
+        sprintf(appkey_cmd, "AT+KEY=APPKEY, \"%s\"\r\n", appkey);
+        at_send_check_response("+KEY: APPKEY", 1000, appkey_cmd);
+        
+        sprintf(loraregion_cmd, "AT+DR=%s\r\n", loraregion);
+        at_send_check_response("+DR:", 1000, loraregion_cmd);
+        
+        sprintf(lorachannel_cmd, "AT+CH=NUM,%s\r\n", lorachannel);
+        at_send_check_response("+CH: NUM", 1000, lorachannel_cmd);
+        
+        //at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEUI, \"2CF7F12032307C03\"\r\n");
+        //at_send_check_response("+ID: AppEui", 1000, "AT+ID=AppEui, \"8000000000000006\"\r\n");
+        //at_send_check_response("+KEY: APPKEY", 1000, "AT+KEY=APPKEY, \"01EAC9876043F188C5D6E098D6D9C222\"\r\n");
+        //at_send_check_response("+DR: US915", 1000, "AT+DR=US915\r\n");
+        //at_send_check_response("+CH: NUM", 1000, "AT+CH=NUM,8-15\r\n");
         at_send_check_response("+MODE: LWOTAA", 1000, "AT+MODE=LWOTAA\r\n");
         delay(200);
         is_join = true;
@@ -185,10 +205,21 @@ void loop()
     read_value();
   }
 
-  // Lora start send data
-//  Serial.println(Serial1.available());
-  delay(250);
+  Serial.println();
+  Serial.print("moisture1_value = ");
+  Serial.print(moisture1_value);
+  Serial.println();
+  Serial.print("moisture2_value = ");
+  Serial.print(moisture2_value);
+  Serial.println();
+  Serial.print("moisture3_value = ");
+  Serial.print(moisture3_value);
+  Serial.println();
+  Serial.print("moisture4_value = ");
+  Serial.print(moisture4_value);
+  Serial.println();
 
+  // Lora start send data
   if (is_exist)
   {
       int ret = 0;
@@ -196,6 +227,7 @@ void loop()
       {
 
           ret = at_send_check_response("+JOIN: Network joined", 12000, "AT+JOIN\r\n");
+          delay(200);
           if (ret)
           {
               is_join = false;
@@ -210,40 +242,28 @@ void loop()
       else
       {
           char cmd[128];
-          sprintf(cmd, "AT+CMSGHEX=\"%04X%04X\"\r\n", 10, 10);
-          ret = at_send_check_response("Done", 5000, cmd);
+          sprintf(cmd, "AT+CMSGHEX=\"%04X%04X%04X%04X\"\r\n", moisture1_value, moisture2_value, moisture3_value, moisture4_value);
+          ret = at_send_check_response("Done", 10000, cmd);
+          delay(200);
           if (ret)
-          {
-              recv_prase(recv_buf);
-          }
-          else
           {
               Serial.print("Send failed!\r\n\r\n");
           }
-          delay(5000);
+          else
+          {
+              recv_prase(recv_buf);
+          }
+          // Delay to datarate set
+          delay(datarate * 1000);
       }
   }
-  else
-  {
-      delay(1000);
-  }
-
+  
   // Lora end send data
 }
 
 //Set moisture value
 void read_value()
 {
-/**************These is for resistor moisture sensor***********
- float value1 = analogRead(A0);
-  moisture1_value = (value1 * 120) / 1023; delay(20);
-  float value2 = analogRead(A1);
-  moisture2_value = (value2 * 120) / 1023; delay(20);
-  float value3 = analogRead(A2);
-  moisture3_value = (value3 * 120) / 1023; delay(20);
-  float value4 = analogRead(A3);
-  moisture4_value = (value4 * 120) / 1023; delay(20);
- **********************************************************/
 /************These is for capacity moisture sensor*********/
  float value1 = analogRead(A0);
   moisture1_value =map(value1,590,360,0,100); delay(20);
@@ -269,7 +289,7 @@ void read_value()
 
 void water_flower()
 {
-//  if (moisture1_value < 30)/
+//  if (moisture1_value < 30)
 //  Serial.print("moisture1_value = ");
 //  Serial.print(moisture1_value);
 //  Serial.println();
@@ -298,7 +318,7 @@ void water_flower()
     }
   }
 
-//  if (moisture2_value < 30)/
+//  if (moisture2_value < 30)
 //  Serial.print("moisture2_value = ");
 //  Serial.print(moisture2_value);
 //  Serial.println();
@@ -327,7 +347,7 @@ void water_flower()
     }
   }
 
-//  if (moisture3_value < 30)/
+//  if (moisture3_value < 30)
 //    Serial.print("moisture3_value = ");
 //    Serial.print(moisture3_value);
 //    Serial.println();
@@ -356,7 +376,7 @@ void water_flower()
     }
   }
 
-//  if (moisture4_/value < 30)
+//  if (moisture4_value < 30)
 //    Serial.print("moisture4_value = ");
 //    Serial.print(moisture4_value);
 //    Serial.println();
