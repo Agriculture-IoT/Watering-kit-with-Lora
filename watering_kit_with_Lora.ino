@@ -9,6 +9,16 @@ RTC_DS1307 RTC;
 
 
 // Lora Functions start
+#define DEFAULT_TIMEOUT 2000
+#define PASSTHROUGH_TIMEOUT 15000
+#define JOIN_TIMEOUT 12000
+#define SEND_TIMEOUT_BASE 7000
+#define MAX_RESP_BUF_SZ  64
+#define MAX_DOWNLINK_BUF 32
+#define LOGLN(x)  Serial.println x
+#define SERIALE5 Serial1
+
+
 static char recv_buf[512];
 static bool is_exist = false;
 static bool is_join = false;
@@ -139,7 +149,8 @@ unsigned long nowtimeNext3;
 
 void setup()
 {
- delay(2000);
+  char _cmd[128];
+  delay(2000);
   Wire.begin();
   RTC.begin();
   Serial.begin(9600);
@@ -163,15 +174,24 @@ void setup()
     if (at_send_check_response("+AT: OK", 100, "AT\r\n"))
     {
         is_exist = true;
-        //at_send_check_response("+ID: AppEui", 1000, "AT+ID\r\n");
         at_send_check_response("+ID: AppEui", 1000, "AT+ID\r\n");
         at_send_check_response("+MODE: LWOTAA", 1000, "AT+MODE=LWOTAA\r\n");
         at_send_check_response("+DR: US915", 1000, "AT+DR=US915\r\n");
-        at_send_check_response("+CH: NUM", 1000, "AT+CH=NUM,0-7,15-64\r\n");
-        //at_send_check_response("+CH: NUM", 1000, "AT+CH=2,ON\r\n");
+
+        char atch[18];
+        for ( int i=0 ; i < 72 ; i++ ) {
+          if ( i < 8 || i > 15 ) {
+            sprintf(atch, "AT+CH=%d,OFF\r\n", i);
+            at_send_check_response("+CH: NUM", 1000, atch);
+          }
+        }
+
+        at_send_check_response("+ID: DevEui", 1000, "AT+ID=DevEUI,\"2CF7F12032307C03\"\r\n");
         at_send_check_response("+KEY: APPKEY", 1000, "AT+KEY=APPKEY,\"01EAC9876043F188C5D6E098D6D9C222\"\r\n");
+        at_send_check_response("+MODE: LWOTAA", 1000, "AT+MODE=LWOTAA\r\n");
+        at_send_check_response("+DR: US915", 1000, "AT+DR=DR0\r\n");
         at_send_check_response("+CLASS: A", 1000, "AT+CLASS=A\r\n");
-        at_send_check_response("+PORT: 8", 1000, "AT+PORT=8\r\n");
+        at_send_check_response("+PORT: 1", 1000, "AT+PORT=1\r\n");
         delay(200);
         is_join = true;
     }
