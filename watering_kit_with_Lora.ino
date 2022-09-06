@@ -5,6 +5,23 @@ RTC_DS1307 RTC;
 #include<Arduino.h>
 #include "config.h"
 
+
+/*
+ * Create DevEui from ThingStack GUI or use the DevEui from output of AT-command AT+ID=DevEui
+ * Create AppEui from ThingStack GUI or use the AppEui from output of AT-command AT+ID=AppEui
+ * Create AppKey from ThingStack GUI
+ * Set Channel 902-928 MHz (FSB 2) with ThingStack and use AT+CH=NUM,8-15 
+ */
+#define loraregion "US915"
+#define lorachannel "8-15"
+#define devaddr "32307C03"
+#define deveui "2CF7F12032307C03"
+#define appeui "8000000000000006"
+#define appkey "01EAC9876043F188C5D6E098D6D9C222"
+#define datarate 90     // Time in seconds
+#define soil_moisture_threshold 1 //Moisture Threshold for watering plants
+
+
 /* 
  * LoRaWAN functions
  * Adopted using example code from https://wiki.seeedstudio.com/Grove_LoRa_E5_New_Version/
@@ -95,7 +112,9 @@ int moisture2_value = 0;
 int moisture3_value = 0;
 int moisture4_value = 0;
 
-int mthreshold = soil_moisture_threshold ;
+
+// Moisture threshold value
+int mthreshold = 1;
 
 // set water relays
 int relay1 = 6;
@@ -196,8 +215,6 @@ void setup()
 
 void loop()
 {
-
-  water_flower();
 //  int button_state = digitalRead(button);
 //  if (button_state == 1)
 //  {
@@ -228,7 +245,7 @@ void loop()
       {
            // read the value from the moisture sensors:
           read_value();
-          
+          water_flower();
           Serial.println();
           Serial.print("moisture1_value = ");
           Serial.print(moisture1_value);
@@ -244,7 +261,7 @@ void loop()
           Serial.println();
           
           char cmd[128];
-          sprintf(cmd, "AT+CMSGHEX=\"%04X%04X%04X%04X\"\r\n", moisture1_value, moisture2_value, moisture3_value, moisture4_value);
+          sprintf(cmd, "AT+CMSGHEX=\"%02X%02X%02X%02X\"\r\n", moisture1_value, moisture2_value, moisture3_value, moisture4_value);
           ret = at_send_check_response("Done", 10000, cmd);
           delay(200);
           if (ret)
@@ -267,24 +284,36 @@ void read_value()
 {
 /************These is for capacity moisture sensor*********/
  float value1 = analogRead(A0);
-  moisture1_value =map(value1,590,360,0,100); delay(20);
+  moisture1_value =map(value1,600,360,0,100); delay(20);
   if(moisture1_value<0){
     moisture1_value=0;
+  }
+  if(moisture1_value>100){
+    moisture1_value=100;
   }
   float value2 = analogRead(A1);
   moisture2_value =map(value2,600,360,0,100); delay(20);
   if(moisture2_value<0) {
     moisture2_value=0;
   }
+  if(moisture2_value>100){
+    moisture2_value=100;
+  }
   float value3 = analogRead(A2);
   moisture3_value =map(value3,600,360,0,100); delay(20);
   if(moisture3_value<0){
     moisture3_value=0;
   }
+  if(moisture3_value>100){
+    moisture3_value=100;
+  }
   float value4 = analogRead(A3);
   moisture4_value =map(value4,600,360,0,100); delay(20);
   if(moisture4_value<0) {
     moisture4_value=0;
+  }
+  if(moisture4_value>100){
+    moisture4_value=100;
   }
 }
 
@@ -406,5 +435,4 @@ void water_flower()
       delay(50);
     }
   }
-delay(1000);
 }
