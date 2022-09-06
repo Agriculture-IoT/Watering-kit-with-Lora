@@ -15,7 +15,7 @@ This project is to connect Elecrow Watering kit to Things LoRaWAN stack.
 **Step 1.** Solder male jumper wires to Grove connector.  
 To connect Grove LoRa-E5 board to Elecrow board, a grove to female header connector cable is required. Cut the grove connector cable and solder male connector cable. 
 <br>
-<img src="./images/FemaleHeadertoGroveCable.jpg" alt="Connector cable" style="width:250px;"/>
+<img src="./images/FemaleHeadertoGroveCable.jpg" alt="Connector cable" style="width:800px;"/>
 
 
 **Step 2.** Assemble the kit without the LCD screen.  
